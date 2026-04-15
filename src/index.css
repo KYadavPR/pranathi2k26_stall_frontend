@@ -1,0 +1,374 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=Almendra:wght@400;700&display=swap');
+
+:root {
+  --shastra-maroon: #2d0b0b;
+  --shastra-gold: #d4af37;
+  --shastra-gold-light: #f1d592;
+  --shastra-red: #8b0000;
+  --shastra-dark: #120404;
+  --bg-main: #0a0303;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-main);
+  color: #fff;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+.shastra-font {
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* KIOSK LAYOUT */
+.kiosk-container {
+  display: flex;
+  height: 100vh;
+  background-color: var(--bg-main);
+  overflow: hidden;
+}
+
+.kiosk-header {
+  padding: 1.5rem;
+  text-align: center;
+  border-bottom: 2px solid var(--shastra-gold);
+  background: var(--shastra-maroon);
+}
+
+.kiosk-header .logo {
+  font-family: 'Cinzel', serif;
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--shastra-gold);
+}
+
+.kiosk-header .tagline {
+  display: block;
+  font-family: 'Almendra', serif;
+  font-size: 0.9rem;
+  color: var(--shastra-gold-light);
+  font-style: italic;
+}
+
+.section-title {
+  margin: 2rem 0 1.5rem;
+  padding-left: 10px;
+  border-left: 4px solid var(--shastra-gold);
+  color: var(--shastra-gold);
+}
+
+/* INDIVIDUAL PRODUCT CARDS (HORIZONTAL) */
+.product-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  padding: 1rem;
+}
+
+.product-card {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 15px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.product-card:hover {
+  border-color: var(--shastra-gold);
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.product-image {
+  width: 180px;
+  height: 180px;
+  object-fit: cover;
+}
+
+.product-info {
+  flex: 1;
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.product-name {
+  font-family: 'Cinzel', serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--shastra-gold);
+}
+
+.product-description {
+  font-family: 'Almendra', serif;
+  font-size: 0.85rem;
+  color: #ccc;
+  margin-top: 5px;
+  font-style: italic;
+}
+
+.product-price {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+/* COMBO TICKET STYLE */
+.combo-ticket {
+  display: flex;
+  background: #fff;
+  color: var(--shastra-maroon);
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.3s;
+  position: relative;
+  min-height: 180px;
+}
+
+.combo-ticket:hover {
+  transform: scale(1.02);
+}
+
+.combo-left {
+  background: var(--shastra-maroon);
+  color: var(--shastra-gold);
+  width: 100px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: 2px dashed var(--shastra-maroon);
+}
+
+.combo-right {
+  flex: 1;
+  padding: 1.2rem;
+  display: flex;
+  background: var(--shastra-gold-light);
+  justify-content: space-between;
+}
+
+.combo-details h3 {
+  font-family: 'Cinzel', serif;
+  margin-bottom: 5px;
+  color: var(--shastra-maroon);
+}
+
+.ticket-tear {
+  position: absolute;
+  left: 90px;
+  top: -10px;
+  width: 20px;
+  height: 20px;
+  background: var(--bg-main);
+  border-radius: 50%;
+}
+
+/* CART PANEL */
+.cart-panel {
+  width: 350px;
+  background: var(--shastra-gold-light);
+  color: var(--shastra-maroon);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(45, 11, 11, 0.2);
+}
+
+.qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.qty-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--shastra-maroon);
+  background: transparent;
+  color: var(--shastra-maroon);
+  cursor: pointer;
+}
+
+/* OVERLAYS */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+.success-card {
+  background: var(--shastra-gold-light);
+  color: var(--shastra-maroon);
+  padding: 2.5rem;
+  border-radius: 20px;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+}
+
+/* BUTTONS */
+.btn-primary {
+  background: var(--shastra-maroon);
+  color: var(--shastra-gold);
+  border: none;
+  padding: 1rem;
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* RESPONSIVENESS */
+
+/* Laptop & Desktop Upscale */
+@media (min-width: 1200px) {
+  .kiosk-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    box-shadow: 0 0 100px rgba(0, 0, 0, 0.5);
+    border-left: 1px solid rgba(212, 175, 55, 0.1);
+    border-right: 1px solid rgba(212, 175, 55, 0.1);
+  }
+
+  .cart-panel {
+    width: 420px;
+    padding: 2.5rem;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+
+  .section-title {
+    font-size: 1.8rem;
+    margin: 3rem 0 2rem;
+  }
+
+  .product-name {
+    font-size: 1.6rem;
+  }
+
+  .product-price {
+    font-size: 1.8rem;
+  }
+
+  .logo {
+    font-size: 3.5rem !important;
+  }
+
+  .tagline {
+    font-size: 1.1rem !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .cart-panel {
+    width: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .kiosk-container {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .cart-panel {
+    width: 100%;
+    height: auto;
+    border-top: 2px solid var(--shastra-gold);
+    padding: 1.5rem;
+  }
+
+  .product-image {
+    width: 140px;
+    height: 140px;
+  }
+
+  .logo {
+    font-size: 1.8rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-card {
+    flex-direction: column;
+  }
+
+  .product-image {
+    width: 100%;
+    height: 200px;
+  }
+
+  .combo-ticket {
+    flex-direction: column;
+  }
+
+  .combo-left {
+    width: 100%;
+    height: 60px;
+    flex-direction: row;
+    gap: 20px;
+    border-right: none;
+    border-bottom: 2px dashed var(--shastra-maroon);
+  }
+
+  .ticket-tear {
+    left: calc(50% - 10px);
+    top: 50px;
+  }
+
+  .logo {
+    font-size: 1.5rem !important;
+  }
+}
+
+/* PRINTING */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #print-section,
+  #print-section * {
+    visibility: visible;
+  }
+
+  #print-section {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+}
