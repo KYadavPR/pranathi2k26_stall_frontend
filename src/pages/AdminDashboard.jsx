@@ -15,6 +15,8 @@ export default function AdminDashboard() {
     const [itemForm, setItemForm] = useState({ name: "", price: "", cost: "", stock: "", image: "", description: "" });
     const [comboForm, setComboForm] = useState({ name: "", price: "", cost: "", stock: "", components: [], image: "", description: "" });
     const [newAdmin, setNewAdmin] = useState({ username: "", password: "" });
+    const [bookingCart, setBookingCart] = useState([]);
+    const [bookingLoading, setBookingLoading] = useState(false);
 
     const getAuthHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
 
@@ -97,6 +99,53 @@ export default function AdminDashboard() {
         fetchData();
     };
 
+    const printToPhone = async (order) => {
+        const ESC = '\x1B';
+        const GS = '\x1D';
+        const L = '--------------------------------\n';
+
+        let t = '';
+        t += ESC + '@'; // init
+        t += ESC + 'a' + '\x01'; // center
+        t += ESC + 'E' + '\x01'; // bold on
+        t += 'SODA SHASTRA\n';
+        t += ESC + 'E' + '\x00'; // bold off
+        t += 'Ancient Taste, Modern Twist\n';
+        t += 'Pranathi 2k26 Edition\n';
+        t += ESC + 'a' + '\x00'; // left
+        t += L;
+        t += `Bill No: ${order.tokenNumber}  ${new Date(order.createdAt).toLocaleTimeString()}\n`;
+        t += L;
+
+        order.detailedItems.forEach(i => {
+            const line = `${i.quantity}x ${i.name}`;
+            const price = `${(i.price * i.quantity).toFixed(0)}`;
+            // Manual padding logic for 32-column thermal printers
+            t += line.padEnd(24).slice(0, 24) + price.padStart(8) + '\n';
+        });
+
+        t += L;
+        t += 'TOTAL'.padEnd(24) + `${order.total.toFixed(2)}`.padStart(8) + '\n';
+        t += L;
+        t += ESC + 'a' + '\x01'; // center
+        if (order.totalSaved) t += `You Saved: Rs.${order.totalSaved.toFixed(0)}\n`;
+        t += 'Thank you! Visit again\n';
+        t += ESC + 'a' + '\x00';
+        t += '\n\n\n';
+        t += GS + 'V' + '\x41' + '\x03'; // cut
+
+        try {
+            await fetch('http://192.168.1.6:8080/print', {
+                method: 'POST',
+                body: t,
+                headers: { 'Content-Type': 'text/plain' }
+            });
+            console.log("Sent to printer!");
+        } catch (err) {
+            console.error("Failed to print to phone", err);
+        }
+    };
+
     const handlePrint = (order) => {
         const detailedItems = order.items.map(it => {
             const prod = products.find(p => p._id === it._id);
@@ -117,7 +166,10 @@ export default function AdminDashboard() {
         const totalDiscount = detailedItems.reduce((s, it) => s + (it.isCombo ? it.discount : 0), 0);
         const totalSaved = totalDiscount;
 
-        setPrintingOrder({ ...order, detailedItems, hasCombo, totalSubtotal, totalDiscount, totalSaved });
+        const printData = { ...order, detailedItems, hasCombo, totalSubtotal, totalDiscount, totalSaved };
+
+        setPrintingOrder(printData);
+        printToPhone(printData); // Trigger RawBT printing
 
         setTimeout(() => {
             window.print();
@@ -150,6 +202,41 @@ export default function AdminDashboard() {
     const totalProfit = orders.reduce((sum, o) => sum + (o.profit || 0), 0);
     const pendingOrders = orders.filter(o => o.status === "pending");
     const paidOrders = orders.filter(o => o.status === "completed").slice(0, 10);
+
+    const addToBookingCart = (p) => {
+        if (p.stock <= 0) return;
+        setBookingCart(prev => {
+            const existing = prev.find(item => item._id === p._id);
+            if (existing) return prev.map(item => item._id === p._id ? { ...item, quantity: item.quantity + 1 } : item);
+            return [...prev, { ...p, quantity: 1 }];
+        });
+    };
+
+    const updateBookingQuantity = (id, delta) => {
+        setBookingCart(prev => prev.map(item => item._id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item));
+    };
+
+    const removeFromBookingCart = (id) => {
+        setBookingCart(prev => prev.filter(item => item._id !== id));
+    };
+
+    const handleBookingSubmit = async () => {
+        if (bookingCart.length === 0) return;
+        setBookingLoading(true);
+        try {
+            const res = await axios.post(`${API}/orders`, { items: bookingCart, status: "completed" }, getAuthHeader());
+            setBookingCart([]);
+            fetchData();
+            handlePrint(res.data);
+            alert(`Booking successful! Token #${res.data.tokenNumber}`);
+        } catch (err) {
+            alert("Booking failed. Please try again.");
+        } finally {
+            setBookingLoading(false);
+        }
+    };
+
+    const bookingTotal = bookingCart.reduce((sum, it) => sum + (it.price * it.quantity), 0);
 
     return (
         <div className="container" style={{ minHeight: "100vh" }}>
@@ -249,10 +336,62 @@ export default function AdminDashboard() {
 
             <div style={{ display: "flex", gap: "10px", marginBottom: "2rem", overflowX: "auto", paddingBottom: "5px" }}>
                 <button onClick={() => setTab("analytics")} className={`tab-pill ${tab === 'analytics' ? 'active' : ''}`}>ORDERS</button>
+                <button onClick={() => setTab("booking")} className={`tab-pill ${tab === 'booking' ? 'active' : ''}`}>BOOKING</button>
                 <button onClick={() => setTab("inventory")} className={`tab-pill ${tab === 'inventory' ? 'active' : ''}`}>INVENTORY</button>
                 <button onClick={() => setTab("team")} className={`tab-pill ${tab === 'team' ? 'active' : ''}`}>TEAM</button>
             </div>
 
+            {tab === "booking" && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "2rem" }}>
+                    <div style={{ background: "rgba(0,0,0,0.2)", padding: "1.5rem", borderRadius: "15px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <h4 className="premium-header" style={{ marginTop: 0 }}>Select Products</h4>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "15px" }}>
+                            {products.map(p => (
+                                <div key={p._id} className={`inventory-card ${p.stock <= 0 ? 'out-of-stock' : ''}`} style={{ flexDirection: "column", padding: "10px", cursor: p.stock > 0 ? "pointer" : "default" }} onClick={() => p.stock > 0 && addToBookingCart(p)}>
+                                    <img src={p.image || "https://via.placeholder.com/80?text=Food"} style={{ width: "100%", height: "100px", objectFit: "cover", borderRadius: "8px" }} alt={p.name} />
+                                    <div style={{ textAlign: "center", marginTop: "10px" }}>
+                                        <div style={{ fontWeight: 800, fontSize: "0.9rem", color: "var(--shastra-gold)" }}>{p.name.toUpperCase()}</div>
+                                        <div style={{ fontSize: "1.1rem", fontWeight: 900 }}>₹{p.price}</div>
+                                        <div style={{ fontSize: "0.7rem", color: p.stock < 10 ? 'var(--shastra-red)' : '#888' }}>Stock: {p.stock}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="form-box" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", height: "fit-content", position: "sticky", top: "2rem" }}>
+                        <h4 className="premium-header" style={{ marginTop: 0, textAlign: "center", borderBottom: "1px dashed var(--shastra-gold)", paddingBottom: "10px" }}>CART</h4>
+                        <div style={{ flex: 1, maxHeight: "400px", overflowY: "auto", marginBottom: "1.5rem" }}>
+                            {bookingCart.length === 0 ? <div style={{ textAlign: "center", opacity: 0.5, marginTop: "2rem" }}>Cart is empty</div> : (
+                                bookingCart.map(it => (
+                                    <div key={it._id} style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "10px" }}>
+                                        <div>
+                                            <div style={{ fontWeight: 800, fontSize: "0.85rem" }}>{it.name.toUpperCase()}</div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "5px" }}>
+                                                <button onClick={(e) => { e.stopPropagation(); updateBookingQuantity(it._id, -1); }} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "white", width: "24px", height: "24px", borderRadius: "50%", cursor: "pointer" }}>-</button>
+                                                <span style={{ fontWeight: 900 }}>{it.quantity}</span>
+                                                <button onClick={(e) => { e.stopPropagation(); updateBookingQuantity(it._id, 1); }} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "white", width: "24px", height: "24px", borderRadius: "50%", cursor: "pointer" }}>+</button>
+                                            </div>
+                                        </div>
+                                        <div style={{ textAlign: "right" }}>
+                                            <div style={{ fontWeight: 900 }}>₹{it.price * it.quantity}</div>
+                                            <button onClick={(e) => { e.stopPropagation(); removeFromBookingCart(it._id); }} style={{ background: "none", border: "none", color: "var(--shastra-red)", fontSize: "0.7rem", cursor: "pointer", marginTop: "5px" }}>REMOVE</button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        <div style={{ borderTop: "2px solid var(--shastra-gold)", paddingTop: "1rem" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.3rem", fontWeight: 900, marginBottom: "1rem" }}>
+                                <span>TOTAL</span>
+                                <span>₹{bookingTotal}</span>
+                            </div>
+                            <button className="btn-primary" style={{ width: "100%", padding: "12px", fontSize: "1rem" }} onClick={handleBookingSubmit} disabled={bookingCart.length === 0 || bookingLoading}>
+                                {bookingLoading ? "PROCESS..." : "GENERATE BILL"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {tab === "analytics" && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2rem" }}>
                     <div>
@@ -483,6 +622,8 @@ export default function AdminDashboard() {
                   .inventory-card { flex-direction: column; align-items: center; text-align: center; }
                   .inv-img { width: 100%; height: 120px; }
                 }
+                .out-of-stock { opacity: 0.5; filter: grayscale(1); pointer-events: none; position: relative; }
+                .out-of-stock::after { content: "OUT OF STOCK"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); background: var(--shastra-red); color: white; padding: 5px 10px; font-weight: 900; border-radius: 4px; font-size: 0.8rem; z-index: 2; }
             `}</style>
         </div>
     );
